@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Personal Chat",
+  "description": "A personal AI chat interface that leverages the Gemini API for advanced text and file analysis. It supports conversation history, file uploads for context, and provides detailed file metadata.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,136 @@
+<div class="flex h-full w-full text-white bg-gray-950 dark">
+  <!-- Sidebar for Chat History -->
+  <aside class="w-1/4 max-w-xs h-full bg-gray-900 flex flex-col p-2">
+    <div class="p-2">
+      <button (click)="startNewChat()"
+        class="w-full flex items-center justify-center gap-2 rounded-lg border border-gray-600 px-4 py-2 text-gray-200 hover:bg-gray-800 hover:text-white transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        New Chat
+      </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto mt-2 space-y-1 pr-1">
+      @for (session of chatSessions(); track trackBySessionId) {
+      <div class="group relative">
+        <button (click)="selectChat(session.id)" [class.bg-gray-800]="activeSessionId() === session.id"
+          class="w-full text-left truncate rounded-lg p-3 text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors">
+          {{ session.title }}
+        </button>
+        <button (click)="deleteChat(session.id)"
+          class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-gray-500 hover:bg-gray-700 hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd"
+              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z"
+              clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+      }
+    </nav>
+  </aside>
+
+  <!-- Main Chat Area -->
+  <main class="flex-1 flex flex-col h-full">
+    @if (activeSession(); as session) {
+    <div #chatContainer class="flex-1 overflow-y-auto p-6 space-y-6">
+      @for (message of session.messages; track trackByMessage; let i = $index) {
+        <div class="flex gap-4" [class.flex-row-reverse]="message.role === 'user'">
+        <!-- Avatar -->
+        <div class="w-8 h-8 rounded-full flex-shrink-0" [class.bg-indigo-500]="message.role === 'user'" [class.bg-teal-500]="message.role === 'ai'">
+            @if (message.role === 'user') {
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-100" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+            </svg>
+            } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-teal-100 p-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.528L16.5 21.75l-.398-1.222a4.5 4.5 0 00-4.21-4.21L10.5 15.75l1.222-.398a4.5 4.5 0 004.21-4.21L16.5 9.75l.398 1.222a4.5 4.5 0 004.21 4.21L22.5 15.75l-1.222.398a4.5 4.5 0 00-4.21 4.21z" />
+            </svg>
+            }
+        </div>
+        <!-- Message bubble -->
+        <div class="max-w-xl">
+          <div class="p-4 rounded-lg text-white" [class.bg-indigo-600]="message.role === 'user'" [class.bg-gray-800]="message.role === 'ai'">
+            @if (message.fileInfo) {
+              <div class="mb-2 p-2 border border-gray-500 rounded-lg bg-gray-700">
+                <p class="text-sm font-semibold text-gray-200 break-all">{{ message.fileInfo.name }}</p>
+                <p class="text-xs text-gray-400">
+                  {{ formatBytes(message.fileInfo.size) }} | {{ message.fileInfo.type }}
+                </p>
+              </div>
+            }
+            @if (message.role === 'ai') {
+              <div class="prose prose-invert max-w-none text-white" [innerHTML]="message.text | markdown"></div>
+            } @else {
+              <div class="prose prose-invert max-w-none text-white whitespace-pre-wrap">{{ message.text }}</div>
+            }
+          </div>
+        </div>
+      </div>
+      }
+      @if (isLoading() && activeSession()?.messages[activeSession()!.messages.length-1].text === '') {
+        <div class="flex justify-center items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400"></div>
+        </div>
+      }
+    </div>
+    } @else {
+    <div class="flex-1 flex flex-col justify-center items-center text-center p-6">
+      <div class="w-16 h-16 bg-teal-500 rounded-2xl flex items-center justify-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-teal-100 p-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.528L16.5 21.75l-.398-1.222a4.5 4.5 0 00-4.21-4.21L10.5 15.75l1.222-.398a4.5 4.5 0 004.21-4.21L16.5 9.75l.398 1.222a4.5 4.5 0 004.21 4.21L22.5 15.75l-1.222.398a4.5 4.5 0 00-4.21 4.21z" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-semibold text-gray-200">Gemini Personal Chat</h2>
+      <p class="mt-2 text-gray-400">Start a new conversation or select one from the list.</p>
+    </div>
+    }
+
+    <!-- Prompt Input Area -->
+    <div class="p-4 border-t border-gray-800">
+      @if (error(); as errorMessage) {
+        <div class="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded-lg mb-3 text-sm">
+            {{ errorMessage }}
+        </div>
+      }
+      @if (fileMetadata(); as meta) {
+        <div class="bg-gray-800 p-3 rounded-lg mb-3 flex items-start justify-between">
+          <div>
+              <p class="font-semibold text-sm text-gray-200 break-all">{{ meta.name }}</p>
+              <div class="text-xs text-gray-400 mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                  <span>Size: <strong>{{ formatBytes(meta.size) }}</strong></span>
+                  <span>Words: <strong>{{ meta.wordCount > 0 ? meta.wordCount : 'N/A' }}</strong></span>
+                  <span>Chars: <strong>{{ meta.charCount > 0 ? meta.charCount : 'N/A' }}</strong></span>
+                  <span>Pages: <strong>{{ meta.pageCount ?? 'N/A' }}</strong></span>
+              </div>
+          </div>
+          <button (click)="removeAttachment()" class="p-1.5 rounded-full hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      }
+      <div class="relative bg-gray-850 rounded-lg">
+        <textarea [value]="currentPrompt()" (input)="currentPrompt.set($event.target.value)" (keydown)="handleKeydown($event)" rows="1"
+          placeholder="Type your message or attach a file..."
+          class="w-full bg-transparent p-4 pr-24 rounded-lg text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none"></textarea>
+        <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <label for="file-upload" class="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            <input id="file-upload" type="file" (change)="handleFileChange($event)" class="hidden" />
+          </label>
+          <button (click)="sendMessage()" [disabled]="isLoading() || (!currentPrompt() && !attachedFile())"
+            class="p-2 rounded-full bg-teal-500 text-white disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-teal-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
